@@ -51,8 +51,8 @@ def vng_mask_adj_matrix(adj_matrix: sp.spmatrix, n_masks: int, nodes_per_mask: i
     """
     results = []
     current_adj_matrix = adj_matrix.copy()
+    results.append(current_adj_matrix)
     nnodes = current_adj_matrix.shape[0]
-
     for _ in range(n_masks):
         if nnodes <= nodes_per_mask:
             break
@@ -60,7 +60,6 @@ def vng_mask_adj_matrix(adj_matrix: sp.spmatrix, n_masks: int, nodes_per_mask: i
         nnodes -= nodes_per_mask       
         results.append(mask_adj_matrix)
         current_adj_matrix = mask_adj_matrix
-    
     return results
 
 def vng_mask_attr_matrix(attr_matrix: sp.spmatrix, n_masks: int, nodes_per_mask: int) -> list:
@@ -77,6 +76,7 @@ def vng_mask_attr_matrix(attr_matrix: sp.spmatrix, n_masks: int, nodes_per_mask:
     """
     results = []
     current_attr_matrix = attr_matrix.copy()
+    results.append(current_attr_matrix)
     nnodes = current_attr_matrix.shape[0]
 
     for _ in range(n_masks):
@@ -194,7 +194,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
     e = np.ones((theta.shape[0], 1))  # (n-g)*1
     s_T = theta.T/(theta.T @ e) # 1*(n-g)
 
-    for _ in range(10):
+    for _ in range(100):
         # step 2
         U11 = P11 # g*g
 
@@ -252,7 +252,7 @@ class PPRPowerIteration(nn.Module):
         self.alpha = alpha
         self.niter = niter
 
-        M = calc_A_hat(adj_matrix) #A 加selfloop加归一化
+        M = calc_A_hat(adj_matrix) #A normalized before adding self-loop
         self.register_buffer('A_hat', sparse_matrix_to_torch((1 - alpha) * M)) #A_hat = (1-alpha)M，存入buffer
 
         if drop_prob is None or drop_prob == 0:
@@ -294,15 +294,15 @@ class SDG(nn.Module):
         return self.dropout(self.mat[idx]) @ predictions
 
 class VNG(nn.Module):
-    def __init__(self, adj_matrix: sp.spmatrix, attr_matrix: sp.spmatrix, alpha: float, Z, g, drop_prob: float = None):
+    def __init__(self, adj_matrix: sp.spmatrix, attr_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha: float, Z, g, drop_prob: float = None):
         super().__init__()
 
         start_time = time.time()
 
-        # last time graph structure and its ppr matrix
+        # last graph structure and its ppr matrix
         self.adj_matrix = adj_matrix
         self.attr_matrix = attr_matrix
-        ppr_mat = calc_ppr_exact(adj_matrix, alpha)
+        ppr_mat = calc_ppr_exact(old_adj_matrix, alpha)
         
         print('Generating the new graph costs: ' + str(time.time() - start_time) + ' sec.')
 
