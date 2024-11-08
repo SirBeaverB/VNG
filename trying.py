@@ -1,7 +1,7 @@
-from sdg.data.io import load_dataset
-from sdg.pytorch_code.propagation import vng_mask_adj_matrix, vng_moving_nodes
+from codes.data.io import load_dataset
+from codes.pytorch_code.propagation import vng_mask_adj_matrix, vng_moving_nodes
 import numpy as np
-from sdg.pytorch_code.propagation import vng_compute_P, vng_power_method
+from codes.pytorch_code.propagation import vng_compute_P, vng_power_method
 
 
 r = np.array([0.2, 0.3,0.4,0.1])
