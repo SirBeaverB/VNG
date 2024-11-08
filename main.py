@@ -12,7 +12,7 @@ from codes.data.sparsegraph import create_subgraph
 import copy
 
 NODE_PER_MASK = 50
-N_MASKS = 10
+N_MASKS = 3
 
 
 if __name__ == '__main__':
@@ -22,7 +22,7 @@ if __name__ == '__main__':
             datefmt='%Y-%m-%d %H:%M:%S',
             level=logging.INFO)
 
-    graph_name = 'cora_ml'  # - alternative dataset 'citeseer' and 'pubmed' - #
+    graph_name = 'cora_ml'  # 'cora_ml' - alternative dataset 'citeseer' and 'pubmed' - #
     graph = load_dataset(graph_name)
     graph.standardize(select_lcc=True)
 
@@ -86,7 +86,25 @@ if __name__ == '__main__':
     
     adj_attr_list = vng_mask_attr_matrix(graph.attr_matrix, N_MASKS, NODE_PER_MASK)
     adj_attr_list.reverse()
+
+    graph_new = copy.deepcopy(graph)
+    nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - 1)))
+    subgraph_new = create_subgraph(graph_new, nodes_to_remove = nodes_to_remove)
+
+    # i = 0
+    prop_ppnp = PPRExact(subgraph_new.adj_matrix, alpha=0.1)
+    model_args = {
+        'hiddenunits': [64], 
+        'drop_prob': 0.5,    
+        'propagation': prop_ppnp} # - alternative 'propagation': prop_appnp - #
+    model, result, Z = train_model(
+            graph_name, agnostic_model, subgraph_new, model_args, learning_rate, reg_lambda, 
+            idx_split_args, stopping_args, test, device, None, print_interval)
     
+    print('Training basic graph for VNG costs: ' + str(time.time() - start_time) + ' sec.')
+    
+
+    start_time = time.time()
     if len(adj_mat_list) < 2:
         logging.error("adj_mat_list does not have enough elements to proceed.")
         exit(1)
@@ -96,17 +114,17 @@ if __name__ == '__main__':
         i_moved_adj_matrix, i_moved_attr_matrix, g = vng_moving_nodes(i_adj_matrix, i_attr_matrix, NODE_PER_MASK)
         
         graph_new = copy.deepcopy(graph)
-        nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i)))
+        nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
         subgraph_new = create_subgraph(graph_new, nodes_to_remove = nodes_to_remove)
  
-        vng = VNG(i_moved_adj_matrix, i_moved_attr_matrix, subgraph_new.adj_matrix, alpha=0.1, Z=Z, g=g).to(device)
+        vng = VNG(i_moved_adj_matrix, i_moved_attr_matrix, subgraph_new.adj_matrix, alpha=0.1, old_Z=Z, g=g).to(device)
 
         model_args = {
             'hiddenunits': [64],
             'drop_prob': 0.5,
             'propagation': vng}
         
-        model, result = fine_tune(
+        model, result, Z = fine_tune(
             graph_name, model, subgraph_new, model_args, learning_rate, reg_lambda,   #graph是新的图
             idx_split_args, stopping_args, test, device, None, print_interval)
         print('Generating the new graph + Training VNG costs: ' + str(time.time() - start_time) + ' sec.')

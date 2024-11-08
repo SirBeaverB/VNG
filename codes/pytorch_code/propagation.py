@@ -294,7 +294,7 @@ class SDG(nn.Module):
         return self.dropout(self.mat[idx]) @ predictions
 
 class VNG(nn.Module):
-    def __init__(self, adj_matrix: sp.spmatrix, attr_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha: float, Z, g, drop_prob: float = None):
+    def __init__(self, adj_matrix: sp.spmatrix, attr_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, old_Z, alpha: float, g, drop_prob: float = None):
         super().__init__()
 
         start_time = time.time()
@@ -308,8 +308,12 @@ class VNG(nn.Module):
 
         # tracked pi matrix
         columns = []
-        for i in range(Z.shape[1]):
-            r = np.ones((adj_matrix.shape[0], 1)) / adj_matrix.shape[0]
+        n_new = adj_matrix.shape[0]
+        n_old = old_Z.shape[0]
+        n_delta = n_new - n_old
+        for i in range(old_Z.shape[1]):
+            r = np.zeros((n_new, 1))
+            r[n_delta:, 0] = old_Z[:, i] #add the zeros to the old Z, (n*1)
             t_pi = vng_track_pi(adj_matrix, adj_matrix, alpha, r, g) 
             columns.append(t_pi)
         pi_mat = np.column_stack(columns) # n*k
@@ -324,3 +328,4 @@ class VNG(nn.Module):
 
     def forward(self, predictions: torch.FloatTensor, idx: torch.LongTensor):
         return self.dropout(self.mat[idx]) @ predictions
+    #TODO: add the pi_mat to the forward function

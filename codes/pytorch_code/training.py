@@ -141,7 +141,7 @@ def train_model(
     result['runtime_perepoch'] = runtime_perepoch
 
     all_idx = torch.arange(len(labels_all))
-    Z = vng_get_predictions(model, attr_mat_norm, all_idx)
+    Z = get_Z(model, attr_mat_norm, all_idx)
     
     return model, result, Z
 
@@ -160,7 +160,7 @@ def get_predictions(model, attr_matrix, idx, batch_size=None):
             preds.append(torch.argmax(log_preds, dim=1))
     return torch.cat(preds, dim=0).cpu().numpy()
 
-def vng_get_predictions(model, attr_matrix, idx, batch_size=None):
+def get_Z(model, attr_matrix, idx, batch_size=None):
     if batch_size is None:
         batch_size = idx.numel()
     dataset = TensorDataset(idx)
@@ -289,4 +289,7 @@ def fine_tune(
     result['runtime'] = runtime
     result['runtime_perepoch'] = runtime_perepoch
 
-    return model, result
+    all_idx = torch.arange(len(labels_all))
+    Z = get_Z(model, attr_mat_norm, all_idx)
+
+    return model, result, Z
