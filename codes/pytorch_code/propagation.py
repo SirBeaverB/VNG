@@ -5,6 +5,7 @@ import torch.nn as nn
 import math
 import random
 import time
+import torch.nn.functional as F
 
 from .utils import MixedDropout, sparse_matrix_to_torch
 
@@ -163,13 +164,13 @@ def vng_compute_P(alpha, A, r):
     P = (1 - alpha) * A_T + alpha * e@(r.T)
     return P
 
-def vng_power_method(U, tol=1e-8, max_iter=10):
-    U = U / U.sum(axis=1).reshape(-1, 1)
+def vng_power_method(U, tol=1e-8, max_iter=100):
+    U = U / U.sum(axis=1)#.reshape(-1, 1)
     n = U.shape[0]
     phi_T = np.ones(n) / n
     for _ in range(max_iter):
         phi_T_next = phi_T @ U
-        phi_T_next /= np.sum(phi_T_next) # normalize
+        #phi_T_next /= np.sum(phi_T_next) # normalize
         if np.linalg.norm(phi_T_next - phi_T, 1) < tol:
             break
         phi_T = phi_T_next
@@ -184,6 +185,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
     # step 1
     #calculate P
     P = vng_compute_P(alpha, M_prime, r) #r should be n*1
+
     P11 = P[:g, :g] # g*g
     P12 = P[:g, g:] # g*(n-g)
     P21 = P[g:, :g] # (n-g)*g
@@ -194,7 +196,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
     e = np.ones((theta.shape[0], 1))  # (n-g)*1
     s_T = theta.T/(theta.T @ e) # 1*(n-g)
 
-    for _ in range(100):
+    for _ in range(500):
         # step 2
         U11 = P11 # g*g
 
@@ -219,6 +221,8 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
         phi_g = phi_T[:,:g] # g*1
         phi_s = phi_T[0, g] * s_T
         pi = np.concatenate((phi_g.T, phi_s.T)) # 1*(g)
+
+        pi = F.softmax(torch.tensor(pi), dim=-1)
 
         pi_hat_T = pi.T @ P
         if np.linalg.norm(pi_hat_T - pi, 1) < 0.0001:
@@ -266,6 +270,7 @@ class PPRPowerIteration(nn.Module):
             A_drop = self.dropout(self.A_hat)
             preds = A_drop @ preds + self.alpha * local_preds
         return preds[idx] #返回idx对应的部分。
+    
 
 
 class SDG(nn.Module):
@@ -294,7 +299,8 @@ class SDG(nn.Module):
         return self.dropout(self.mat[idx]) @ predictions
 
 class VNG(nn.Module):
-    def __init__(self, adj_matrix: sp.spmatrix, attr_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, old_Z, alpha: float, g, drop_prob: float = None):
+    def __init__(self, adj_matrix: sp.spmatrix, attr_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, 
+                 old_Z, alpha: float, niter: int, g, drop_prob: float = None):
         super().__init__()
 
         start_time = time.time()
@@ -315,17 +321,33 @@ class VNG(nn.Module):
             r = np.zeros((n_new, 1))
             r[n_delta:, 0] = old_Z[:, i] #add the zeros to the old Z, (n*1)
             t_pi = vng_track_pi(adj_matrix, adj_matrix, alpha, r, g) 
+            #t_pi /= np.sum(t_pi)  # Normalize t_pi
             columns.append(t_pi)
         pi_mat = np.column_stack(columns) # n*k
-        self.pi_mat = torch.FloatTensor(pi_mat)
+        self.register_buffer('pi_mat', torch.FloatTensor(pi_mat))
 
-        self.register_buffer('mat', torch.FloatTensor(ppr_mat))
+        #self.register_buffer('mat', torch.FloatTensor(ppr_mat))
 
         if drop_prob is None or drop_prob == 0:
             self.dropout = lambda x: x
         else:
             self.dropout = MixedDropout(drop_prob)
 
-    def forward(self, predictions: torch.FloatTensor, idx: torch.LongTensor):
-        return self.dropout(self.mat[idx]) @ predictions
-    #TODO: add the pi_mat to the forward function
+        #
+        self.alpha = alpha
+        self.niter = niter
+
+        M = calc_A_hat(adj_matrix) #A normalized before adding self-loop
+        self.register_buffer('A_hat', sparse_matrix_to_torch((1 - alpha) * M)) #A_hat = (1-alpha)M，存入buffer
+
+        if drop_prob is None or drop_prob == 0:
+            self.dropout = lambda x: x
+        else:
+            self.dropout = MixedDropout(drop_prob)
+
+    def forward(self, local_preds: torch.FloatTensor, idx: torch.LongTensor):
+        preds = self.pi_mat 
+        for _ in range(self.niter):
+            A_drop = self.dropout(self.A_hat)
+            preds = A_drop @ preds + self.alpha * local_preds #local_preds = h0
+        return preds[idx] #return the part of idx

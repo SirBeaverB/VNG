@@ -35,6 +35,6 @@ class agnostic_model(nn.Module):
         return res
 
     def forward(self, attr_matrix: torch.sparse.FloatTensor, idx: torch.LongTensor):
-        local_logits = self._transform_features(attr_matrix) # 第一阶段得到的representation h0
+        local_logits = self._transform_features(attr_matrix) # representation h0
         final_logits = self.propagation(local_logits, idx)  # - personalize information propagation scheme - #
         return F.log_softmax(final_logits, dim=-1)

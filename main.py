@@ -12,7 +12,7 @@ from codes.data.sparsegraph import create_subgraph
 import copy
 
 NODE_PER_MASK = 50
-N_MASKS = 3
+N_MASKS = 1
 
 
 if __name__ == '__main__':
@@ -48,23 +48,25 @@ if __name__ == '__main__':
     device = 'cpu'
     print_interval = 50
 
-    for i in range(N_MASKS):
+    """for i in range(N_MASKS):
         graph_new_ppnp = copy.deepcopy(graph)
         nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
         subgraph_new_ppnp = create_subgraph(graph_new_ppnp, nodes_to_remove = nodes_to_remove)
-        prop_ppnp = PPRExact(subgraph_new_ppnp.adj_matrix, alpha=0.1)
+        #prop_ppnp = PPRExact(subgraph_new_ppnp.adj_matrix, alpha=0.1)
+        prop_appnp = PPRPowerIteration(subgraph_new_ppnp.adj_matrix, alpha=0.1, niter=10)
         model_args = {
         'hiddenunits': [64], 
         'drop_prob': 0.5,    
-        'propagation': prop_ppnp} # - alternative 'propagation': prop_appnp - #
-        model, result, Z = train_model(
+        'propagation': prop_appnp} # - alternative 'propagation': prop_appnp - #
+        model, result, Z, Z_exp = train_model(
             graph_name, agnostic_model, subgraph_new_ppnp, model_args, learning_rate, reg_lambda, 
             idx_split_args, stopping_args, test, device, None, print_interval)
     
-        print('Training PPNP costs: ' + str(time.time() - start_time) + ' sec.')
+        print('Training APPNP costs: ' + str(time.time() - start_time) + ' sec.')
    
     # - SDG receives PPNP and fine-tunes on the updated graph - #
-    start_time = time.time()
+    start_time = time.time()"""
+    
 
     """sdg = SDG(graph.adj_matrix, alpha=0.1).to(device)
 
@@ -92,15 +94,15 @@ if __name__ == '__main__':
     subgraph_new = create_subgraph(graph_new, nodes_to_remove = nodes_to_remove)
 
     # i = 0
-    prop_ppnp = PPRExact(subgraph_new.adj_matrix, alpha=0.1)
+    #prop_ppnp = PPRExact(subgraph_new.adj_matrix, alpha=0.1)
+    prop_appnp = PPRPowerIteration(subgraph_new.adj_matrix, alpha=0.1, niter=10)
     model_args = {
         'hiddenunits': [64], 
         'drop_prob': 0.5,    
-        'propagation': prop_ppnp} # - alternative 'propagation': prop_appnp - #
-    model, result, Z = train_model(
+        'propagation': prop_appnp} # - alternative 'propagation': prop_appnp - #
+    model, result, Z, Z_exp= train_model(
             graph_name, agnostic_model, subgraph_new, model_args, learning_rate, reg_lambda, 
             idx_split_args, stopping_args, test, device, None, print_interval)
-    
     print('Training basic graph for VNG costs: ' + str(time.time() - start_time) + ' sec.')
     
 
@@ -114,17 +116,17 @@ if __name__ == '__main__':
         i_moved_adj_matrix, i_moved_attr_matrix, g = vng_moving_nodes(i_adj_matrix, i_attr_matrix, NODE_PER_MASK)
         
         graph_new = copy.deepcopy(graph)
-        nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
+        nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i)))
         subgraph_new = create_subgraph(graph_new, nodes_to_remove = nodes_to_remove)
  
-        vng = VNG(i_moved_adj_matrix, i_moved_attr_matrix, subgraph_new.adj_matrix, alpha=0.1, old_Z=Z, g=g).to(device)
+        vng = VNG(i_moved_adj_matrix, i_moved_attr_matrix, subgraph_new.adj_matrix, alpha=0.1, niter=10, old_Z=Z_exp, g=g).to(device)
 
         model_args = {
             'hiddenunits': [64],
             'drop_prob': 0.5,
             'propagation': vng}
         
-        model, result, Z = fine_tune(
+        model, result, Z, Z_exp = fine_tune(
             graph_name, model, subgraph_new, model_args, learning_rate, reg_lambda,   #graph是新的图
             idx_split_args, stopping_args, test, device, None, print_interval)
         print('Generating the new graph + Training VNG costs: ' + str(time.time() - start_time) + ' sec.')
