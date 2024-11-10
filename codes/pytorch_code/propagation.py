@@ -196,7 +196,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
     e = np.ones((theta.shape[0], 1))  # (n-g)*1
     s_T = theta.T/(theta.T @ e) # 1*(n-g)
 
-    for _ in range(500):
+    for _ in range(100):
         # step 2
         U11 = P11 # g*g
 
@@ -213,6 +213,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
         top = np.hstack((U11, U12))
         bottom = np.hstack((U21, U22))
         U = np.vstack((top, bottom)) # (g+1)*(g+1)
+
         
         # step 3
         phi_T = vng_power_method(U) # (g+1)*1
