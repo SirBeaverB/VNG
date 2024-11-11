@@ -45,10 +45,10 @@ if __name__ == '__main__':
     learning_rate = 0.01
 
     test = False
-    device = 'cpu'
+    device = 'cuda'
     print_interval = 50
 
-    """for i in range(N_MASKS):
+    for i in range(N_MASKS):
         graph_new_ppnp = copy.deepcopy(graph)
         nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
         subgraph_new_ppnp = create_subgraph(graph_new_ppnp, nodes_to_remove = nodes_to_remove)
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         print('Training APPNP costs: ' + str(time.time() - start_time) + ' sec.')
    
     # - SDG receives PPNP and fine-tunes on the updated graph - #
-    start_time = time.time()"""
+    start_time = time.time()
     
 
     """sdg = SDG(graph.adj_matrix, alpha=0.1).to(device)
