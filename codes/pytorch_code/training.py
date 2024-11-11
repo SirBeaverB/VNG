@@ -141,9 +141,9 @@ def train_model(
     result['runtime_perepoch'] = runtime_perepoch
 
     all_idx = torch.arange(len(labels_all))
-    Z, Z_exp = get_Z(model, attr_mat_norm, all_idx)
+    Z = get_Z(model, attr_mat_norm, all_idx)
     
-    return model, result, Z, Z_exp
+    return model, result, Z
 
 
 def get_predictions(model, attr_matrix, idx, batch_size=None):
@@ -173,8 +173,8 @@ def get_Z(model, attr_matrix, idx, batch_size=None):
             log_preds = model(attr_matrix, idx)
             preds.append(log_preds)
     Z = torch.cat(preds, dim=0).cpu().numpy() #H n*k
-    Z_exp = torch.exp(torch.tensor(Z))
-    return Z, Z_exp
+    #Z_exp = torch.exp(torch.tensor(Z))
+    return Z
 
 
 def fine_tune(
@@ -292,6 +292,6 @@ def fine_tune(
     result['runtime_perepoch'] = runtime_perepoch
 
     all_idx = torch.arange(len(labels_all))
-    Z, Z_exp = get_Z(model, attr_mat_norm, all_idx)
+    Z = get_Z(model, attr_mat_norm, all_idx)
 
-    return model, result, Z, Z_exp
+    return model, result, Z

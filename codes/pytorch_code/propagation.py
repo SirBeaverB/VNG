@@ -211,7 +211,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
     S[:rows_I, :cols_I] = I
     S[rows_I:, cols_I:] = s_T
 
-    for _ in range(100):
+    for _ in range(10):
         # step 2
         """U11 = P11 # g*g
 
@@ -321,28 +321,28 @@ class SDG(nn.Module):
         return self.dropout(self.mat[idx]) @ predictions
 
 class VNG(nn.Module):
-    def __init__(self, adj_matrix: sp.spmatrix, attr_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, 
+    def __init__(self, new_adj_matrix: sp.spmatrix,
                  old_Z, alpha: float, niter: int, g, drop_prob: float = None):
         super().__init__()
 
-        start_time = time.time()
+        #start_time = time.time()
 
         # last graph structure and its ppr matrix
-        self.adj_matrix = adj_matrix
-        self.attr_matrix = attr_matrix
-        ppr_mat = calc_ppr_exact(old_adj_matrix, alpha)
+        #self.adj_matrix = adj_matrix
+        #self.attr_matrix = attr_matrix
+        #ppr_mat = calc_ppr_exact(old_adj_matrix, alpha)
         
-        print('Generating the new graph costs: ' + str(time.time() - start_time) + ' sec.')
+        #print('Generating the new graph costs: ' + str(time.time() - start_time) + ' sec.')
 
         # tracked pi matrix
         columns = []
-        n_new = adj_matrix.shape[0]
+        n_new = new_adj_matrix.shape[0]
         n_old = old_Z.shape[0]
         n_delta = n_new - n_old
         for i in range(old_Z.shape[1]):
             r = np.zeros((n_new, 1))
             r[n_delta:, 0] = old_Z[:, i] #add the zeros to the old Z, (n*1)
-            t_pi = vng_track_pi(adj_matrix, adj_matrix, alpha, r, g) 
+            t_pi = vng_track_pi(new_adj_matrix, new_adj_matrix, alpha, r, g) 
             #t_pi /= np.sum(t_pi)  # Normalize t_pi
             columns.append(t_pi)
         pi_mat = np.column_stack(columns) # n*k
@@ -359,7 +359,7 @@ class VNG(nn.Module):
         self.alpha = alpha
         self.niter = niter
 
-        M = calc_A_hat(adj_matrix) #A normalized before adding self-loop
+        M = calc_A_hat(new_adj_matrix) #A normalized before adding self-loop
         self.register_buffer('A_hat', sparse_matrix_to_torch((1 - alpha) * M)) #A_hat = (1-alpha)M，存入buffer
 
         if drop_prob is None or drop_prob == 0:
@@ -368,8 +368,8 @@ class VNG(nn.Module):
             self.dropout = MixedDropout(drop_prob)
 
     def forward(self, local_preds: torch.FloatTensor, idx: torch.LongTensor):
-        preds = self.pi_mat 
+        preds = self.pi_mat
         for _ in range(self.niter):
             A_drop = self.dropout(self.A_hat)
-            preds = A_drop @ preds + self.alpha * local_preds #local_preds = h0
+            preds = A_drop @ preds + self.alpha * local_preds  #local_preds = h0
         return preds[idx] #return the part of idx
