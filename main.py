@@ -54,6 +54,7 @@ if __name__ == '__main__':
         nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
         subgraph_new_ppnp = create_subgraph(graph_new_ppnp, nodes_to_remove = nodes_to_remove)
         #prop_ppnp = PPRExact(subgraph_new_ppnp.adj_matrix, alpha=0.1)
+        start_time = time.time()
         prop_appnp = PPRPowerIteration(subgraph_new_ppnp.adj_matrix, alpha=0.1, niter=10)
         model_args = {
             'hiddenunits': [64], 
@@ -67,7 +68,7 @@ if __name__ == '__main__':
         print('Training APPNP' + str(i)  + 'costs: ' + str(time.time() - start_time) + ' sec.')
    
     # - SDG receives PPNP and fine-tunes on the updated graph - #
-    start_time = time.time()
+
     
 
     """sdg = SDG(graph.adj_matrix, alpha=0.1).to(device)
@@ -97,6 +98,7 @@ if __name__ == '__main__':
 
     # i = 0
     #prop_ppnp = PPRExact(subgraph_new.adj_matrix, alpha=0.1)
+    start_time = time.time()
     prop_appnp = PPRPowerIteration(subgraph_new.adj_matrix, alpha=0.1, niter=10)
     model_args = {
         'hiddenunits': [64], 
@@ -108,7 +110,6 @@ if __name__ == '__main__':
     print('Training basic graph for VNG costs: ' + str(time.time() - start_time) + ' sec.')
     
 
-    start_time = time.time()
     if len(adj_mat_list) < 2:
         logging.error("adj_mat_list does not have enough elements to proceed.")
         exit(1)
@@ -120,7 +121,7 @@ if __name__ == '__main__':
         graph_new = copy.deepcopy(graph)
         nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
         subgraph_new = create_subgraph(graph_new, nodes_to_remove = nodes_to_remove)
- 
+        start_time = time.time()
         vng = VNG(subgraph_new.adj_matrix, alpha=0.1, niter=10, old_Z=Z, g=g).to(device)
         model_args = {
             'hiddenunits': [64],
