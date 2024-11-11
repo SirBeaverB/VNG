@@ -211,7 +211,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
     S[:rows_I, :cols_I] = I
     S[rows_I:, cols_I:] = s_T
 
-    for _ in range(10):
+    for _ in range(2):
         # step 2
         """U11 = P11 # g*g
 
@@ -239,8 +239,6 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
         phi_g = phi_T[:,:g] # g*1
         phi_s = phi_T[0, g] * s_T
         pi = np.concatenate((phi_g.T, phi_s.T)) # 1*(g)
-
-        pi = F.softmax(torch.tensor(pi), dim=-1)
 
         pi_hat_T = pi.T @ P
         if np.linalg.norm(pi_hat_T - pi, 1) < 0.0001:
