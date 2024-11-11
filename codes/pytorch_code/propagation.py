@@ -17,12 +17,12 @@ def calc_A_hat(adj_matrix: sp.spmatrix) -> sp.spmatrix:
     D_invsqrt_corr = sp.diags(D_vec_invsqrt_corr) # vector to diagonal matrix
     return A @ D_invsqrt_corr #A_hat = A @ D^(-1)
 
-
-def calc_ppr_exact(adj_matrix: sp.spmatrix, alpha: float) -> np.ndarray:
+def calc_ppr_exact(adj_matrix: sp.spmatrix, alpha: float) -> torch.Tensor:
     nnodes = adj_matrix.shape[0]
     M = calc_A_hat(adj_matrix)
     A_inner = sp.eye(nnodes) - (1 - alpha) * M
-    return alpha * np.linalg.inv(A_inner.toarray())
+    A_inner = torch.tensor(A_inner.toarray(), dtype=torch.float32)
+    return alpha * torch.linalg.inv(A_inner)
 
 
 def mask_adj_matrix(adj_matrix: sp.spmatrix) -> sp.spmatrix:
@@ -127,14 +127,14 @@ def track_ppr(adj_matrix: sp.spmatrix, masked_adj_matrix: sp.spmatrix, ppr_mat, 
     nnodes = adj_matrix.shape[0]
 
     A = masked_adj_matrix + sp.eye(nnodes)
-    D_vec = np.sum(A, axis=1).A1
-    D_vec_invsqrt_corr = 1 / np.sqrt(D_vec)
+    D_vec = torch.sum(torch.tensor(A.toarray()), dim=1)
+    D_vec_invsqrt_corr = 1 / torch.sqrt(D_vec)
     D_invsqrt_corr = sp.diags(D_vec_invsqrt_corr)
     M = A @ D_invsqrt_corr
 
     A_prime = adj_matrix + sp.eye(nnodes)
-    D_vec_prime = np.sum(A_prime, axis=1).A1
-    D_vec_invsqrt_corr_prime = 1 / np.sqrt(D_vec_prime)
+    D_vec_prime = torch.sum(torch.tensor(A_prime.toarray()), dim=1)
+    D_vec_invsqrt_corr_prime = 1 / torch.sqrt(D_vec_prime)
     D_invsqrt_corr_prime = sp.diags(D_vec_invsqrt_corr_prime)
     M_prime = A_prime @ D_invsqrt_corr_prime
 
@@ -158,27 +158,23 @@ def track_ppr(adj_matrix: sp.spmatrix, masked_adj_matrix: sp.spmatrix, ppr_mat, 
     return t_ppr
 
 def vng_compute_P(alpha, A, r): 
-    #r is a tensor 2*1
-    A_T = A.T
-    e = np.ones((A.shape[0], 1))
+    A_T = torch.tensor(A.toarray(), dtype=torch.float32).T
+    e = torch.ones((A.shape[0], 1), dtype=torch.float32)
     P = (1 - alpha) * A_T + alpha * e@(r.T)
     return P
 
-def vng_power_method(U, tol=1e-8, max_iter=100):
+def vng_power_method(U, tol=1e-8, max_iter=10):
     U = U / U.sum(axis=1)#.reshape(-1, 1)
     n = U.shape[0]
-    phi_T = np.ones(n) / n
+    phi_T = torch.ones(n, dtype=torch.float32) / n
     for _ in range(max_iter):
         phi_T_next = phi_T @ U
-        #phi_T_next /= np.sum(phi_T_next) # normalize
-        if np.linalg.norm(phi_T_next - phi_T, 1) < tol:
+        if torch.norm(phi_T_next - phi_T, p=1) < tol:
             break
         phi_T = phi_T_next
     return phi_T_next
 
 def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha, r, g):
-    #nnodes = new_adj_matrix.shape[0]
-
     M = calc_A_hat(old_adj_matrix)
     M_prime = calc_A_hat(new_adj_matrix)
 
@@ -195,19 +191,19 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
 
     # initialize s_T
     theta = r[g:] # (n-g)*1
-    e = np.ones((n-g, 1))  # (n-g)*1
+    e = torch.ones((n-g, 1), dtype=torch.float32)  # (n-g)*1
     s_T = theta.T/(theta.T @ e) # 1*(n-g)
-    I = np.eye(g)
+    I = torch.eye(g, dtype=torch.float32)
 
     rows_I, cols_I = g, g
     rows_e, cols_e = e.shape
     rows_s_T, cols_s_T = s_T.shape
 
-    E = np.zeros((rows_I + rows_e, cols_I + cols_e))
+    E = torch.zeros((rows_I + rows_e, cols_I + cols_e), dtype=torch.float32)
     E[:rows_I, :cols_I] = I
     E[rows_I:, cols_I:] = e
 
-    S = np.zeros((rows_I + rows_s_T, cols_I + cols_s_T))
+    S = torch.zeros((rows_I + rows_s_T, cols_I + cols_s_T), dtype=torch.float32)
     S[:rows_I, :cols_I] = I
     S[rows_I:, cols_I:] = s_T
 
@@ -236,18 +232,19 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
         phi_T = vng_power_method(U) # (g+1)*1
 
         # step 4
-        phi_g = phi_T[:,:g] # g*1
-        phi_s = phi_T[0, g] * s_T
-        pi = np.concatenate((phi_g.T, phi_s.T)) # 1*(g)
+        phi_g = phi_T[:g]
+        phi_s = phi_T[g] * s_T
+        phi_g = phi_g.unsqueeze(0)  
+        pi = torch.cat((phi_g, phi_s), dim=1) 
 
-        pi_hat_T = pi.T @ P
-        if np.linalg.norm(pi_hat_T - pi, 1) < 0.0001:
+        pi_hat_T = pi @ P #T?
+        if torch.norm(pi_hat_T - pi, p=1) < 0.0001:
             break
 
         theta = pi_hat_T[:, g:] # 1*(n-g)
         s_T = theta/(theta @ e) # 1*(n-g)
 
-        S = np.zeros((rows_I + rows_s_T, cols_I + cols_s_T))
+        S = torch.zeros((rows_I + rows_s_T, cols_I + cols_s_T), dtype=torch.float32)
         S[:rows_I, :cols_I] = I
         S[rows_I:, cols_I:] = s_T
 
@@ -333,17 +330,17 @@ class VNG(nn.Module):
         #print('Generating the new graph costs: ' + str(time.time() - start_time) + ' sec.')
 
         # tracked pi matrix
-        columns = []
+        #columns = []
+        rows = []
         n_new = new_adj_matrix.shape[0]
         n_old = old_Z.shape[0]
         n_delta = n_new - n_old
         for i in range(old_Z.shape[1]):
-            r = np.zeros((n_new, 1))
+            r = torch.zeros((n_new, 1), dtype=torch.float32)
             r[n_delta:, 0] = old_Z[:, i] #add the zeros to the old Z, (n*1)
             t_pi = vng_track_pi(new_adj_matrix, new_adj_matrix, alpha, r, g) 
-            #t_pi /= np.sum(t_pi)  # Normalize t_pi
-            columns.append(t_pi)
-        pi_mat = np.column_stack(columns) # n*k
+            rows.append(t_pi)
+        pi_mat = torch.row_stack(rows) # n*k
         self.register_buffer('pi_mat', torch.FloatTensor(pi_mat))
 
         #self.register_buffer('mat', torch.FloatTensor(ppr_mat))
@@ -366,7 +363,7 @@ class VNG(nn.Module):
             self.dropout = MixedDropout(drop_prob)
 
     def forward(self, local_preds: torch.FloatTensor, idx: torch.LongTensor):
-        preds = self.pi_mat
+        preds = self.pi_mat.T
         for _ in range(self.niter):
             A_drop = self.dropout(self.A_hat)
             preds = A_drop @ preds + self.alpha * local_preds  #local_preds = h0

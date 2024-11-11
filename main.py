@@ -121,7 +121,7 @@ if __name__ == '__main__':
         nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
         subgraph_new = create_subgraph(graph_new, nodes_to_remove = nodes_to_remove)
  
-        vng = VNG(subgraph_new.adj_matrix, alpha=0.1, niter=5, old_Z=Z, g=g).to(device)
+        vng = VNG(subgraph_new.adj_matrix, alpha=0.1, niter=10, old_Z=Z, g=g).to(device)
         model_args = {
             'hiddenunits': [64],
             'drop_prob': 0.5,
