@@ -6,5 +6,5 @@ VNG基础代码已完成。运行main.py即可。
 
 TODO:
 1. 目前的baseline只有APPNP一个。想增加一些新的baseline。
-2. 尝试用VNG解决边预测问题，参考yanping老师的InstantGCN的做法。
+2. 尝试用VNG解决边预测问题，参考yanping老师的这篇。(https://arxiv.org/pdf/2305.08273)
 3. （额外）增加recommender system的case study。找一些推荐系统背景的数据集（Mind, MovieLen这种）。
