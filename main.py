@@ -45,7 +45,7 @@ if __name__ == '__main__':
     learning_rate = 0.01
 
     test = False
-    device = 'cpu'
+    device = 'cuda'
     print_interval = 200
 
     for i in range(N_MASKS):
