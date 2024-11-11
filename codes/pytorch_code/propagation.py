@@ -163,7 +163,7 @@ def vng_compute_P(alpha, A, r):
     P = (1 - alpha) * A_T + alpha * e@(r.T)
     return P
 
-def vng_power_method(U, tol=1e-8, max_iter=10):
+def vng_power_method(U, tol=1e-8, max_iter=5):
     U = U / U.sum(axis=1)#.reshape(-1, 1)
     n = U.shape[0]
     phi_T = torch.ones(n, dtype=torch.float32) / n
