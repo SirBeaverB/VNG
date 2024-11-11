@@ -45,8 +45,8 @@ if __name__ == '__main__':
     learning_rate = 0.01
 
     test = False
-    device = 'cuda'
-    print_interval = 50
+    device = 'cpu'
+    print_interval = 200
 
     for i in range(N_MASKS):
         graph_new_ppnp = copy.deepcopy(graph)
@@ -55,14 +55,15 @@ if __name__ == '__main__':
         #prop_ppnp = PPRExact(subgraph_new_ppnp.adj_matrix, alpha=0.1)
         prop_appnp = PPRPowerIteration(subgraph_new_ppnp.adj_matrix, alpha=0.1, niter=10)
         model_args = {
-        'hiddenunits': [64], 
-        'drop_prob': 0.5,    
-        'propagation': prop_appnp} # - alternative 'propagation': prop_appnp - #
+            'hiddenunits': [64], 
+            'drop_prob': 0.5,    
+            'propagation': prop_appnp}
+        #'propagation': prop_ppnp} # - alternative 'propagation': prop_appnp - #
         model, result, Z = train_model(
             graph_name, agnostic_model, subgraph_new_ppnp, model_args, learning_rate, reg_lambda, 
             idx_split_args, stopping_args, test, device, None, print_interval)
     
-        print('Training APPNP costs: ' + str(time.time() - start_time) + ' sec.')
+        print('Training APPNP' + str(i)  + 'costs: ' + str(time.time() - start_time) + ' sec.')
    
     # - SDG receives PPNP and fine-tunes on the updated graph - #
     start_time = time.time()

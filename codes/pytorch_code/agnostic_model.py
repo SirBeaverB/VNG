@@ -32,7 +32,7 @@ class agnostic_model(nn.Module):
         for fc in self.fcs[1:-1]:
             layer_inner = self.act_fn(fc(layer_inner))
         res = self.fcs[-1](self.dropout(layer_inner))
-        return F.softmax(res)
+        return res
 
     def forward(self, attr_matrix: torch.sparse.FloatTensor, idx: torch.LongTensor):
         local_logits = self._transform_features(attr_matrix) # representation h0
