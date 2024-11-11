@@ -22,7 +22,7 @@ if __name__ == '__main__':
             datefmt='%Y-%m-%d %H:%M:%S',
             level=logging.INFO)
 
-    graph_name = 'cora_ml'  # 'cora_ml' - alternative dataset 'citeseer' and 'pubmed' - #
+    graph_name = 'cora_ml'  # 'cora_ml' - alternative dataset 'citeseer' and 'pubmed' and 'ms_academic- #
     graph = load_dataset(graph_name)
     graph.standardize(select_lcc=True)
 
@@ -41,6 +41,7 @@ if __name__ == '__main__':
         'propagation': prop_ppnp}  # - alternative 'propagation': prop_appnp - #"""
 
     idx_split_args = {'ntrain_per_class': 20, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} 
+    #idx_split_args = {'ntrain_per_class': 5, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} #use this for ms_academic
     reg_lambda = 5e-3
     learning_rate = 0.01
 
