@@ -211,7 +211,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
     S[:rows_I, :cols_I] = I
     S[rows_I:, cols_I:] = s_T
 
-    for _ in range(2):
+    for _ in range(1):
         # step 2
         """U11 = P11 # g*g
 
