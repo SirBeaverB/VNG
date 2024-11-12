@@ -71,10 +71,11 @@ class MixedLinear(nn.Module):
 def sparse_matrix_to_torch(X):
     coo = X.tocoo()
     indices = np.array([coo.row, coo.col])
-    return torch.sparse.FloatTensor(
-            torch.LongTensor(indices),
-            torch.FloatTensor(coo.data),
-            coo.shape)
+    return torch.sparse_coo_tensor(
+        torch.LongTensor(indices),
+        torch.FloatTensor(coo.data),
+        coo.shape
+    )
 
 
 def matrix_to_torch(X):

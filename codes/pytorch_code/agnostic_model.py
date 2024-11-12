@@ -19,7 +19,7 @@ class agnostic_model(nn.Module):
 
         self.reg_params = list(self.fcs[0].parameters())
 
-        if drop_prob is 0:
+        if drop_prob == 0:
             self.dropout = lambda x: x
         else:
             self.dropout = MixedDropout(drop_prob)
