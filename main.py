@@ -10,6 +10,7 @@ from codes.pytorch_code.propagation import vng_mask_adj_matrix, vng_mask_attr_ma
 from codes.data.io import load_dataset
 from codes.data.sparsegraph import create_subgraph
 import copy
+import torch
 
 NODE_PER_MASK = 50
 N_MASKS = 10
@@ -22,7 +23,7 @@ if __name__ == '__main__':
             datefmt='%Y-%m-%d %H:%M:%S',
             level=logging.INFO)
 
-    graph_name = 'cora_ml'  # 'cora_ml' - alternative dataset 'citeseer' and 'pubmed' and 'ms_academic' - #
+    graph_name = 'pubmed'  # 'cora_ml' - alternative dataset 'citeseer' and 'pubmed' and 'ms_academic' - #
     graph = load_dataset(graph_name)
     graph.standardize(select_lcc=True)
 
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     # - Train PPNP for the initial inputs for SDG - #
     start_time = time.time()
 
-    """prop_ppnp = PPRExact(subgraph.adj_matrix, alpha=0.1)
+    prop_ppnp = PPRExact(subgraph.adj_matrix, alpha=0.1)
 
     model_args = {
         'hiddenunits': [64], 
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     learning_rate = 0.01
 
     test = False
-    device = 'cuda'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print_interval = 200
 
     for i in range(N_MASKS):
@@ -66,23 +67,6 @@ if __name__ == '__main__':
             idx_split_args, stopping_args, test, device, None, print_interval)
     
         print('Training APPNP' + str(i)  + 'costs: ' + str(time.time() - start_time) + ' sec.')
-   
-    # - SDG receives PPNP and fine-tunes on the updated graph - #
-
-    
-
-    """sdg = SDG(graph.adj_matrix, alpha=0.1).to(device)
-
-    model_args = {
-        'hiddenunits': [64],
-        'drop_prob': 0.5,
-        'propagation': sdg}
-    
-    model, result = fine_tune(
-        graph_name, model, graph, model_args, learning_rate, reg_lambda,
-        idx_split_args, stopping_args, test, device, None, print_interval)
-    
-    print('Generating the new graph + Training SDG costs: ' + str(time.time() - start_time) + ' sec.')"""
 
     # VNG  
 

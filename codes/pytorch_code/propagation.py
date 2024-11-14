@@ -118,6 +118,7 @@ def vng_moving_nodes(new_adj_matrix: sp.spmatrix, new_attr_matrix: sp.spmatrix, 
     adjusted_attr_matrix = new_attr_matrix[new_order, :]
     
     num_changed_nodes = len(influenced_nodes)
+    print('Number of changed nodes: ' + str(num_changed_nodes))
     
     return adjusted_adj_matrix, adjusted_attr_matrix, num_changed_nodes
 
@@ -181,13 +182,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
     # step 1
     #calculate P
     P = vng_compute_P(alpha, M_prime, r) #r should be n*1
-
     n = P.shape[0]
-
-    """P11 = P[:g, :g] # g*g
-    P12 = P[:g, g:] # g*(n-g)
-    P21 = P[g:, :g] # (n-g)*g
-    P22 = P[g:, g:] # (n-g)*(n-g)"""
 
     # initialize s_T
     theta = r[g:] # (n-g)*1
@@ -209,23 +204,6 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
 
     for _ in range(1):
         # step 2
-        """U11 = P11 # g*g
-
-        e = np.ones((P12.shape[1], 1))  # (n-g)*1
-        U12 = P12 @ e
-
-        theta = r[g:] # (n-g)*1
-        s_T = theta.T/(theta.T @ e) # 1*(n-g)
-        U21 = s_T @ P21 # 1*g
-
-        e_22 = np.ones((g, 1)) # g*1
-        U22 = 1 - U21 @ e_22 # 1*1
-
-        top = np.hstack((U11, U12))
-        bottom = np.hstack((U21, U22))
-        U = np.vstack((top, bottom)) # (g+1)*(g+1)"""
-        
-
         U = S @ P @ E
         
         # step 3
@@ -237,7 +215,7 @@ def vng_track_pi(new_adj_matrix: sp.spmatrix, old_adj_matrix: sp.spmatrix, alpha
         phi_g = phi_g.unsqueeze(0)  
         pi = torch.cat((phi_g, phi_s), dim=1) 
 
-        pi_hat_T = pi @ P #T?
+        pi_hat_T = pi @ P 
         if torch.norm(pi_hat_T - pi, p=1) < 0.0001:
             break
 
@@ -286,7 +264,7 @@ class PPRPowerIteration(nn.Module):
         for _ in range(self.niter):
             A_drop = self.dropout(self.A_hat)
             preds = A_drop @ preds + self.alpha * local_preds
-        return preds[idx] #返回idx对应的部分。
+        return preds[idx] 
     
 
 
@@ -319,18 +297,6 @@ class VNG(nn.Module):
     def __init__(self, new_adj_matrix: sp.spmatrix,
                  old_Z, alpha: float, niter: int, g, drop_prob: float = None):
         super().__init__()
-
-        #start_time = time.time()
-
-        # last graph structure and its ppr matrix
-        #self.adj_matrix = adj_matrix
-        #self.attr_matrix = attr_matrix
-        #ppr_mat = calc_ppr_exact(old_adj_matrix, alpha)
-        
-        #print('Generating the new graph costs: ' + str(time.time() - start_time) + ' sec.')
-
-        # tracked pi matrix
-        #columns = []
         rows = []
         n_new = new_adj_matrix.shape[0]
         n_old = old_Z.shape[0]

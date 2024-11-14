@@ -172,9 +172,7 @@ def get_Z(model, attr_matrix, idx, batch_size=None):
         with torch.set_grad_enabled(False):
             log_preds = model(attr_matrix, idx)
             preds.append(log_preds)
-    #Z = torch.cat(preds, dim=0).cpu().numpy() #H n*k
     Z = torch.cat(preds, dim=0) #H n*k
-    #Z_exp = torch.exp(torch.tensor(Z))
     return Z
 
 
