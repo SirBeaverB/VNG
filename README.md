@@ -18,7 +18,7 @@ We follow the setup of APPNP and conduct experiments on four benchmark node-clas
 
 ## **How to run**
 
-To run the code, simply run [main.py](blob/main/main.py). The code automatically masks the dataset, runs APPNP/PPNP on the updating graph first, and then runs VNG.
+To run the code, simply run [main.py](main.py). The code automatically masks the dataset, runs APPNP/PPNP on the updating graph first, and then runs VNG.
 
 ---
 
