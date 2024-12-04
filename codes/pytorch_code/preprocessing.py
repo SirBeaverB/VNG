@@ -38,6 +38,25 @@ def train_stopping_split(
             nstopping, replace=False)
     return train_idx, stopping_idx
 
+def vng_train_stopping_split(
+        idx: np.ndarray, labels: np.ndarray, ntrain_per_class: int = 20,
+        nstopping: int = 500, seed: int = 2413340114) -> Tuple[np.ndarray, np.ndarray]:
+    rnd_state = np.random.RandomState(seed)
+    train_idx_split = []
+    for i in range(max(labels) + 1):
+        class_idx = idx[labels == i]
+        if len(class_idx) < ntrain_per_class:
+            print(f"Class {i} has only {len(class_idx)} sample(s).")
+            train_idx_split.append(class_idx)
+        else:
+            train_idx_split.append(rnd_state.choice(
+                class_idx, ntrain_per_class, replace=False))
+    train_idx = np.concatenate(train_idx_split)
+    stopping_idx = rnd_state.choice(
+            exclude_idx(idx, [train_idx]),
+            nstopping, replace=False)
+    return train_idx, stopping_idx
+
 
 def gen_splits(
         labels: np.ndarray, idx_split_args: Dict[str, int],
@@ -48,7 +67,7 @@ def gen_splits(
     _, cnts = np.unique(labels[known_idx], return_counts=True)
     stopping_split_args = copy.copy(idx_split_args)
     del stopping_split_args['nknown']
-    train_idx, stopping_idx = train_stopping_split(
+    train_idx, stopping_idx = vng_train_stopping_split(
             known_idx, labels[known_idx], **stopping_split_args)
     if test:
         val_idx = unknown_idx
