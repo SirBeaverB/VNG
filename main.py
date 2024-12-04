@@ -14,6 +14,7 @@ import torch
 
 NODE_PER_MASK = 50
 N_MASKS = 10
+ALPHA = 0.1
 
 
 if __name__ == '__main__':
@@ -23,7 +24,7 @@ if __name__ == '__main__':
             datefmt='%Y-%m-%d %H:%M:%S',
             level=logging.INFO)
 
-    graph_name = 'testx16x32_0'  # 'cora_ml' - alternative dataset 'citeseer' and 'pubmed' and 'ms_academic' - #
+    graph_name = 'movielens'  # 'cora_ml' 'citeseer'  'pubmed' 'ms_academic' 'movielens'- #
     graph = load_dataset(graph_name)
     graph.standardize(select_lcc=True)
 
@@ -34,15 +35,8 @@ if __name__ == '__main__':
     # - Train PPNP for the initial inputs for SDG - #
     start_time = time.time()
 
-    prop_ppnp = PPRExact(subgraph.adj_matrix, alpha=0.1)
-
-    model_args = {
-        'hiddenunits': [64], 
-        'drop_prob': 0.5,    
-        'propagation': prop_ppnp}  # - alternative 'propagation': prop_appnp - #"""
-
-    idx_split_args = {'ntrain_per_class': 20, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} 
-    #idx_split_args = {'ntrain_per_class': 5, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} #use this for ms_academic
+    #idx_split_args = {'ntrain_per_class': 20, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} 
+    idx_split_args = {'ntrain_per_class': 5, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} #use this for ms_academic
     reg_lambda = 5e-3
     learning_rate = 0.01
 
@@ -54,9 +48,9 @@ if __name__ == '__main__':
         graph_new_ppnp = copy.deepcopy(graph)
         nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
         subgraph_new_ppnp = create_subgraph(graph_new_ppnp, nodes_to_remove = nodes_to_remove)
-        #prop_ppnp = PPRExact(subgraph_new_ppnp.adj_matrix, alpha=0.1)
+        #prop_ppnp = PPRExact(subgraph_new_ppnp.adj_matrix, alpha=ALPHA)
         start_time = time.time()
-        prop_appnp = PPRPowerIteration(subgraph_new_ppnp.adj_matrix, alpha=0.1, niter=10)
+        prop_appnp = PPRPowerIteration(subgraph_new_ppnp.adj_matrix, alpha=ALPHA, niter=10)
         model_args = {
             'hiddenunits': [64], 
             'drop_prob': 0.5,    
@@ -81,9 +75,9 @@ if __name__ == '__main__':
     subgraph_new = create_subgraph(graph_new, nodes_to_remove = nodes_to_remove)
 
     # i = 0
-    #prop_ppnp = PPRExact(subgraph_new.adj_matrix, alpha=0.1)
+    #prop_ppnp = PPRExact(subgraph_new.adj_matrix, alpha=ALPHA)
     start_time = time.time()
-    prop_appnp = PPRPowerIteration(subgraph_new.adj_matrix, alpha=0.1, niter=10)
+    prop_appnp = PPRPowerIteration(subgraph_new.adj_matrix, alpha=ALPHA, niter=10)
     model_args = {
         'hiddenunits': [64], 
         'drop_prob': 0.5,    
@@ -106,7 +100,7 @@ if __name__ == '__main__':
         nodes_to_remove = list(range(NODE_PER_MASK * (N_MASKS - i - 1)))
         subgraph_new = create_subgraph(graph_new, nodes_to_remove = nodes_to_remove)
         start_time = time.time()
-        vng = VNG(subgraph_new.adj_matrix, alpha=0.1, niter=10, old_Z=Z, g=g).to(device)
+        vng = VNG(subgraph_new.adj_matrix, alpha=ALPHA, niter=10, old_Z=Z, g=g).to(device)
         model_args = {
             'hiddenunits': [64],
             'drop_prob': 0.5,
