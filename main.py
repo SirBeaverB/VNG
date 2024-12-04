@@ -36,7 +36,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     #idx_split_args = {'ntrain_per_class': 20, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} 
-    idx_split_args = {'ntrain_per_class': 5, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} #use this for ms_academic
+    idx_split_args = {'ntrain_per_class': 5, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} #use this for ms_academic and movielens
     reg_lambda = 5e-3
     learning_rate = 0.01
 
