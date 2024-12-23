@@ -24,9 +24,10 @@ if __name__ == '__main__':
             datefmt='%Y-%m-%d %H:%M:%S',
             level=logging.INFO)
 
-    graph_name = 'movielens'  # 'cora_ml' 'citeseer'  'pubmed' 'ms_academic' 'movielens'- #
+    graph_name = 'movielens_small'  # 'cora_ml' 'citeseer'  'pubmed' 'ms_academic' 'movielens'- #
     graph = load_dataset(graph_name)
     graph.standardize(select_lcc=True)
+    print(graph.node_names.shape)
 
     nodes = list(range(NODE_PER_MASK*N_MASKS))
     graph_copy = copy.deepcopy(graph)  
