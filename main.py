@@ -24,7 +24,7 @@ if __name__ == '__main__':
             datefmt='%Y-%m-%d %H:%M:%S',
             level=logging.INFO)
 
-    graph_name = 'movielens_small'  # 'cora_ml' 'citeseer'  'pubmed' 'ms_academic' 'movielens'- #
+    graph_name = 'cora_ml'  # 'cora_ml' 'citeseer'  'pubmed' 'ms_academic' 'movielens'- #
     graph = load_dataset(graph_name)
     graph.standardize(select_lcc=True)
     print(graph.node_names.shape)
@@ -36,8 +36,8 @@ if __name__ == '__main__':
     # - Train PPNP for the initial inputs for SDG - #
     start_time = time.time()
 
-    #idx_split_args = {'ntrain_per_class': 20, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} 
-    idx_split_args = {'ntrain_per_class': 5, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} #use this for ms_academic and movielens
+    idx_split_args = {'ntrain_per_class': 20, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} 
+    #idx_split_args = {'ntrain_per_class': 5, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} #use this for ms_academic and movielens
     reg_lambda = 5e-3
     learning_rate = 0.01
 
