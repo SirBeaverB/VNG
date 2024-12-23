@@ -12,7 +12,7 @@ VNG is a novel technique that reformulates the iterative computation of node rep
 ---
 
 ## **Datasets**
-We follow the setup of APPNP and conduct experiments on four benchmark node-classification datasets: Cora_ML, Citeseer, PubMed, and Microsoft Academic (MS_Academic).
+We follow the setup of APPNP and conduct experiments on four benchmark node-classification datasets: Cora_ML, Citeseer, PubMed, Microsoft Academic (MS_Academic), and Movielens.
 
 ---
 
