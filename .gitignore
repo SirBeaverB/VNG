@@ -176,4 +176,4 @@ cython_debug/
 
 # file too large and not needed
 DecoupledDGNN/data/wikipedia.csv
-DecoupledDGNN/data/reddit
+DecoupledDGNN/data/reddit/
