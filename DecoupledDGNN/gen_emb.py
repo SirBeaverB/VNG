@@ -2,7 +2,13 @@
 import torch
 import gc
 import numpy as np
-from propagation import InstantGNN
+from propagation import InstantGNN  # 改成vng
+from codes.pytorch_code.propagation import VNG, PPRPowerIteration
+from codes.pytorch_code.training import train_model
+from codes.pytorch_code.training import fine_tune
+from codes.pytorch_code.earlystopping import stopping_args
+from codes.data.sparsegraph import SparseGraph
+from codes.pytorch_code.agnostic_model import agnostic_model
 import argparse
 import pickle
 import os
@@ -13,6 +19,15 @@ import uuid
 from datetime import datetime
 
 np.random.seed(0)
+
+reg_lambda = 5e-3
+learning_rate = 0.01
+test = False
+idx_split_args = {'ntrain_per_class': 20, 'nstopping': 500, 'nknown': 1500, 'seed': 2413340114} 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+ALPHA = 0.1
+print_interval = 200
+g = 10
 
 ## init: empty graph
 def load_data_init(path, datastr, rmax, alpha, randomize_features=False, neg=False):
@@ -51,7 +66,7 @@ def load_data_init(path, datastr, rmax, alpha, randomize_features=False, neg=Fal
     return features, py_alg, n
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--path', default='./data/wikipedia/',
+parser.add_argument('--path', default='data/wikipedia/',
                         help='graph data path')
 parser.add_argument('--data', default='wikipedia',
                         help='graph name, e.g. wikipedia, reddit, CollegeMsg, bitcoinotc, bitcoinalpha, GDELT, MAG')
@@ -113,9 +128,10 @@ if args.split:
 else:
     splits = ['full']
 
-pdb.set_trace()
+# pdb.set_trace()
 count = 0
 history = 0
+
 tmp_file = 'tmp_'+args.data+'.txt'
 for it, ss in enumerate(splits):
     print('---- %s ----' % ss)
@@ -134,19 +150,53 @@ for it, ss in enumerate(splits):
             re_edges=np.concatenate([tt,ss], axis=1)
             edges = np.concatenate([edges, re_edges])
 
-        np.savetxt(tmp_file, edges, fmt='%d', delimiter=' ')
+        # __________________________
+        # edge list to adj matrix
+        adj_matrix = sp.csr_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])), shape=(node_num, node_num))
 
-        py_alg.snapshot_operation(tmp_file, args.rmax, args.alpha, features)
-        os.remove(tmp_file)
+        # __________________________
+        # create graph
+        # Generate random labels for the graph
+        labels = np.random.randint(0, 7, size=node_num)  # Assuming 7 classes
+        graph = SparseGraph(adj_matrix, features, labels=labels)
 
-        delta_feat = features - old_feat
+        if idx == 0:
+            # __________________________
+            prop_appnp = PPRPowerIteration(graph.adj_matrix, alpha=ALPHA, niter=10)
+            model_args = {
+                'hiddenunits': [64], 
+                'drop_prob': 0.5,    
+                'propagation': prop_appnp} # - alternative 'propagation': prop_appnp - #
+            model, result, Z = train_model(
+                    'graph_name', agnostic_model, graph, model_args, learning_rate, reg_lambda, 
+                    idx_split_args, stopping_args, test, device, None, print_interval)
+            # __________________________
 
-        affacted_nodes, pos = np.where(delta_feat!=0)
-        for cur_node, cur_pos in zip(affacted_nodes, pos):
-            nodes_seq_lst[cur_node][idx+1+history, cur_pos] = delta_feat[cur_node, cur_pos]
+        else:
+            # np.savetxt(tmp_file, edges, fmt='%d', delimiter=' ')
+
+            # py_alg.snapshot_operation(tmp_file, args.rmax, args.alpha, features)
+            # os.remove(tmp_file)
+            # __________________________
+            vng = VNG(graph.adj_matrix, alpha=ALPHA, niter=10, old_Z=Z, g=g).to(device)
+            model_args = {
+                'hiddenunits': [64],
+                'drop_prob': 0.5,
+                'propagation': vng}
+            
+            model, result, Z = fine_tune(
+                    'graph_name', model, graph, model_args, learning_rate, reg_lambda,   #subgraph_new is new
+                    idx_split_args, stopping_args, test, device, None, print_interval)
+            # __________________________
+
+            delta_feat = features - old_feat
+
+            affacted_nodes, pos = np.where(delta_feat!=0)
+            for cur_node, cur_pos in zip(affacted_nodes, pos):
+                nodes_seq_lst[cur_node][idx+1+history, cur_pos] = delta_feat[cur_node, cur_pos]
     history += len(time_edge_dict)
 
-pdb.set_trace()
+# pdb.set_trace()
 out_file += '.pkl'
 for i in range(node_num): nodes_seq_lst[i] = sp.csr_matrix(nodes_seq_lst[i])
 ttf = open(out_file,'wb')

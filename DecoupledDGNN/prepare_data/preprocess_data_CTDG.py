@@ -164,24 +164,24 @@ def data_split(graph_df, split_file, different_new_nodes_between_val_and_test=Fa
 
 def run(data_name, bipartite=True, identity=True, inductive=False):
   Path("data/").mkdir(parents=True, exist_ok=True)
-  PATH = '../data/{}.csv'.format(data_name)
-  OUT_DF = '../data/{0}/ml_{0}.csv'.format(data_name)
-  OUT_FEAT = '../data/{0}/ml_{0}.npy'.format(data_name)
-  OUT_NODE_FEAT = '../data/{0}/ml_{0}_node.npy'.format(data_name)
-  OUT_TIME_EDGE_MAP = '../data/{0}/{0}_time_edge_map.pkl'.format(data_name)
-  OUT_INIT_GRAPH = '../data/{0}/{0}_init.txt'.format(data_name)
+  PATH = 'data/{}.csv'.format(data_name)
+  OUT_DF = 'data/{0}/ml_{0}.csv'.format(data_name)
+  OUT_FEAT = 'data/{0}/ml_{0}.npy'.format(data_name)
+  OUT_NODE_FEAT = 'data/{0}/ml_{0}_node.npy'.format(data_name)
+  OUT_TIME_EDGE_MAP = 'data/{0}/{0}_time_edge_map.pkl'.format(data_name)
+  OUT_INIT_GRAPH = 'data/{0}/{0}_init.txt'.format(data_name)
 
   df, feat = preprocess(PATH)
   new_df = reindex(df, bipartite)
   print('reindex finish!!!')
-  pdb.set_trace()
+  # pdb.set_trace()
 
   if inductive:
-    OUT_DATA_SPLIT = '../data/{0}/{0}_split_mask.npz'.format(data_name) #if inductive
+    OUT_DATA_SPLIT = 'data/{0}/{0}_split_mask.npz'.format(data_name) #if inductive
     ind_df = data_split(new_df, OUT_DATA_SPLIT)
     pdb.set_trace()
     time_edge_map = build_time_edge_map(ind_df)
-    OUT_TIME_EDGE_MAP = './data/{}_time_edge_map_inductive.pkl'.format(data_name)
+    OUT_TIME_EDGE_MAP = 'data/{}_time_edge_map_inductive.pkl'.format(data_name)
   else:
     time_edge_map = build_time_edge_map(new_df)
 
@@ -202,7 +202,7 @@ def run(data_name, bipartite=True, identity=True, inductive=False):
   with open(OUT_TIME_EDGE_MAP, 'wb') as f:
     pickle.dump(time_edge_map, f, pickle.HIGHEST_PROTOCOL)
   print('save finish!!!')
-  pdb.set_trace()
+  # pdb.set_trace()
 
 parser = argparse.ArgumentParser('Interface for TGN data preprocessing')
 parser.add_argument('--data', type=str, help='Dataset name (eg. wikipedia or reddit)',

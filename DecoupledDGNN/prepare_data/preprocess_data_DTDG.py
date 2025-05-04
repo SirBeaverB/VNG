@@ -94,7 +94,7 @@ def build_time_edge_map(graph_df, file_name, disperse=True):
     print('save time_edge_map finish!!!')
 
 def run(data_name, snapshot_freq=True, disperse=True):
-    save_path = "../data/" + data_name
+    save_path = "data/" + data_name
     Path(save_path).mkdir(parents=True, exist_ok=True)
 
     OUT_DF = save_path + 'ml_{}_disperse.csv'.format(data_name)
@@ -102,11 +102,11 @@ def run(data_name, snapshot_freq=True, disperse=True):
     OUT_INIT_GRAPH = save_path + '{}_init.txt'.format(data_name)
 
     if data_name =='CollegeMsg':
-        PATH = './{}.txt'.format(data_name)
+        PATH = 'data/{}.txt'.format(data_name)
         df = pd.read_csv(PATH, sep=' ', header=None, index_col=None)
         df.columns = ['u', 'i', 'ts']
     else:
-        PATH = './{}.csv'.format(data_name)
+        PATH = 'data/{}.csv'.format(data_name)
         df = pd.read_csv(PATH, sep=',', header=None, index_col=None)
         df.columns = ['u', 'i', 'rating', 'ts']
     new_df = reindex(df)

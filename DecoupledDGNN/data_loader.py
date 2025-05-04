@@ -160,7 +160,8 @@ def get_data_transductive(dataset_name, different_new_nodes_between_val_and_test
 
     sources = graph_df.u.values
     destinations = graph_df.i.values
-    edge_idxs = graph_df.idx.values
+    edge_idxs = graph_df['ts'].values
+    # edge_idxs = graph_df.idx.values
     if {'label'}.issubset(graph_df.columns):
         labels = graph_df.label.values
     else:
@@ -225,7 +226,7 @@ def get_data_transductive(dataset_name, different_new_nodes_between_val_and_test
     test_data = Data(sources[test_mask], destinations[test_mask], timestamps[test_mask],
                    edge_idxs[test_mask], labels[test_mask])
     print('split finish')
-    pdb.set_trace()
+    # pdb.set_trace()
 
     # validation and test with edges that at least has one new node (not in training set)
     new_node_val_data = Data(sources[new_node_val_mask], destinations[new_node_val_mask],

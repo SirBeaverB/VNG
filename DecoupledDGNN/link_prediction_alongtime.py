@@ -119,10 +119,10 @@ class Execute:
 
                     if args.seq_model in ['lstm', 'gru']:
                         ### get pos features    (sources_batch, destinations_batch, timestamps_batch)
-                        src_features, dst_features = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
+                        src_features, dst_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
                         pos_preds = self.model.get_edges_embedding(src_features.to(self.device), dst_features.to(self.device))
                     elif args.seq_model == 'transformer':
-                        pos_features = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
+                        pos_features, _, _, _ = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
                         pos_preds = self.model(pos_features.to(self.device))
                     pos_labels = torch.ones(pos_preds.shape[0], dtype=torch.float, device=self.device)
                     pos_loss = criterion(pos_preds.squeeze(dim=1), pos_labels) ##pos_loss = -torch.log(pos_preds[:, 1])
@@ -130,10 +130,10 @@ class Execute:
                     ### get negtive sample and features
                     neg_destinations_batch = np.random.randint(0, self.edge_helper.node_num, size)
                     if args.seq_model in ['lstm', 'gru']:
-                        neg_src_features, neg_dst_features = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
+                        neg_src_features, neg_dst_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
                         neg_preds = self.model.get_edges_embedding(neg_src_features.to(self.device), neg_dst_features.to(self.device))
                     elif args.seq_model == 'transformer':
-                        neg_features = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
+                        neg_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
                         neg_preds = self.model(neg_features.to(self.device))
 
                     neg_labels = torch.zeros(neg_preds.shape[0], dtype=torch.float, device=self.device)
@@ -164,6 +164,7 @@ class Execute:
             if valid_ap > best_ap:
                 best_ap = valid_ap
                 best_epoch = epoch
+                print(self.checkpt_file)
                 torch.save(self.model.state_dict(), self.checkpt_file)
                 bad_counter = 0
             else:
@@ -199,10 +200,10 @@ class Execute:
 
                 if args.seq_model in ['lstm', 'gru']:
                     ### get pos features    (sources_batch, destinations_batch, timestamps_batch)
-                    src_features, dst_features = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
+                    src_features, dst_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
                     pos_preds = self.model.get_edges_embedding(src_features.to(self.device), dst_features.to(self.device))
                 elif args.seq_model == 'transformer':
-                    pos_features = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
+                    pos_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
                     pos_preds = self.model(pos_features.to(self.device))
                 pos_labels = torch.ones(pos_preds.shape[0], dtype=torch.float, device=self.device)
                 pos_loss = criterion(pos_preds.squeeze(dim=1), pos_labels) ##pos_loss = -torch.log(pos_preds[:, 1])
@@ -210,10 +211,10 @@ class Execute:
                 ### get negtive sample and features
                 neg_destinations_batch = np.random.randint(0, self.edge_helper.node_num, size)
                 if args.seq_model in ['lstm', 'gru']:
-                    neg_src_features, neg_dst_features = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
+                    neg_src_features, neg_dst_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
                     neg_preds = self.model.get_edges_embedding(neg_src_features.to(self.device), neg_dst_features.to(self.device))
                 elif args.seq_model == 'transformer':
-                    neg_features = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
+                    neg_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
                     neg_preds = self.model(neg_features.to(self.device))
 
                 neg_labels = torch.zeros(neg_preds.shape[0], dtype=torch.float, device=self.device)
@@ -273,7 +274,7 @@ class Execute:
         src_lst = np.unique(eval_sources) # get unique senders.
         num_users = len(src_lst)
 
-        src_features, dst_features = self.edge_helper.get_edges_feats(eval_sources, eval_destinations, eval_timestamps, window_size=self.window_size, concat=False)
+        src_features, dst_features, _, _ = self.edge_helper.get_edges_feats(eval_sources, eval_destinations, eval_timestamps, window_size=self.window_size, concat=False)
         pos_preds = self.model.get_edges_embedding(src_features.to(self.device), dst_features.to(self.device))
         pos_preds = pos_preds.squeeze(dim=1)
         pos_labels = torch.ones(pos_preds.shape[0], dtype=torch.float, device=self.device)
@@ -281,7 +282,7 @@ class Execute:
         # generate negtive samples
         neg_sources, neg_destinations = gen_negative_edges(eval_sources, eval_destinations, num_nodes, num_neg_per_node)
         neg_timestamps = np.resize(eval_timestamps, neg_sources.shape)
-        neg_src_features, neg_dst_features = self.edge_helper.get_edges_feats(neg_sources, neg_destinations, neg_timestamps, window_size=self.window_size, concat=False)
+        neg_src_features, neg_dst_features, _, _ = self.edge_helper.get_edges_feats(neg_sources, neg_destinations, neg_timestamps, window_size=self.window_size, concat=False)
         neg_preds = self.model.get_edges_embedding(neg_src_features.to(self.device), neg_dst_features.to(self.device))
         neg_preds = neg_preds.squeeze(dim=1)
         neg_labels = torch.zeros(neg_preds.shape[0], dtype=torch.float, device=self.device)
@@ -341,10 +342,10 @@ class Execute:
                 timestamps_batch = np.repeat(time, size)
                 if args.seq_model in ['lstm', 'gru']:
                     ### get pos features    (sources_batch, destinations_batch, timestamps_batch)
-                    src_features, dst_features = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
+                    src_features, dst_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
                     pos_preds = self.model.get_edges_embedding(src_features.to(self.device), dst_features.to(self.device))
                 elif args.seq_model == 'transformer':
-                    pos_features = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
+                    pos_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
                     pos_preds = self.model(pos_features.to(self.device))
                 pos_labels = torch.ones(pos_preds.shape[0], dtype=torch.float, device=self.device)
                 pos_loss = criterion(pos_preds.squeeze(dim=1), pos_labels) ##pos_loss = -torch.log(pos_preds[:, 1])
@@ -352,10 +353,10 @@ class Execute:
                 ### get negtive sample and features
                 neg_destinations_batch = np.random.randint(0, self.edge_helper.node_num, size)
                 if args.seq_model in ['lstm', 'gru']:
-                    neg_src_features, neg_dst_features = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
+                    neg_src_features, neg_dst_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=False)
                     neg_preds = self.model.get_edges_embedding(neg_src_features.to(self.device), neg_dst_features.to(self.device))
                 elif args.seq_model == 'transformer':
-                    neg_features = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
+                    neg_features, _, _ = self.edge_helper.get_edges_feats(sources_batch, neg_destinations_batch, timestamps_batch, window_size=self.window_size, concat=True)
                     neg_preds = self.model(neg_features.to(self.device))
                 neg_labels = torch.zeros(neg_preds.shape[0], dtype=torch.float, device=self.device)
                 neg_loss = criterion(neg_preds.squeeze(dim=1), neg_labels)
@@ -387,7 +388,6 @@ class Execute:
 
 
 if __name__ == "__main__":
-    
     args = parameter_parser()
     print(args)
     execute = Execute(args)
